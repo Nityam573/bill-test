@@ -4,10 +4,8 @@
   "description": "Billions Wallet Integration for Verifiers",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "watch": "tsc --watch"
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
   },
   "dependencies": {
     "@0xpolygonid/js-sdk": "^1.31.1",
