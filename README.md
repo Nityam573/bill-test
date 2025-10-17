@@ -37,10 +37,16 @@ USE_CASE=POU  # Options: POH, POU, POVH
 NULLIFIER_SESSION_ID=your_nullifier_session_id
 
 # Redis Configuration (Production)
-REDIS_HOST=redis-10577.c14.us-east-1-2.ec2.redns.redis-cloud.com
-REDIS_PORT=10577
-REDIS_USERNAME=default
-REDIS_PASSWORD=RjBmT7Oj1xtassQ3b5KJVZ4qPRD3knaA
+# ⚠️ SECURITY: Never commit real credentials to code repositories
+REDIS_HOST=your-redis-host.redis-cloud.com
+REDIS_PORT=12345
+REDIS_USERNAME=your-redis-username
+REDIS_PASSWORD=your-secure-redis-password-here
+
+# Security Configuration (Production)
+ALLOWED_ORIGINS=https://your-frontend-domain.com,https://your-mobile-app-domain.com  # Comma-separated list
+NODE_ENV=production  # Set to 'production' for strict CORS
+LOG_LEVEL=info  # Options: error, warn, info, debug
 ```
 
 ### 3. Set Up Public Access

@@ -5,7 +5,15 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "prod": "NODE_ENV=production node src/index.js",
+    "pm2:start": "pm2 start ecosystem.config.js --env production",
+    "pm2:dev": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop billions-verifier",
+    "pm2:restart": "pm2 restart billions-verifier",
+    "pm2:logs": "pm2 logs billions-verifier",
+    "pm2:monitor": "pm2 monit",
+    "logs": "tail -f logs/combined.log"
   },
   "dependencies": {
     "@0xpolygonid/js-sdk": "^1.31.1",
@@ -17,7 +25,8 @@
     "helmet": "^8.1.0",
     "raw-body": "^3.0.0",
     "redis": "^4.6.12",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "winston": "^3.18.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
