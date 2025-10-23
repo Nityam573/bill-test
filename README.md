@@ -12,13 +12,12 @@ This project is a demo backend and static UI for integrating verifications via B
 1. **Install dependencies**
 
 ```bash
-cd "Integration-for-verifiers (Billions Wallet)/js"
 npm install
 ```
 
 ### 2. Configure Environment Variables
 
-Create a `.env` file based on the `env.example` in the `js/` directory:
+Create a `.env` file based on the `env.example` in the directory:
 
 ```bash
 cp env.example .env
@@ -32,9 +31,19 @@ PORT=8080
 HOST_URL=https://your-domain.com  # Your production domain or ngrok URL for development
 
 # Verifier Configuration  
-VERIFIER_DID=your_verifier_did_here
+#⚠️  CRITICAL: IMMUTABLE VALUES - DO NOT CHANGE AFTER FIRST USE (NULLIFIER_ID & VERIFIER_DID)
+# These values CANNOT be changed once users start verifying, as changing them
+# will result in different nullifier IDs and DIDs for the same users.
+VERIFIER_DID=your_verifier_did_here # Download the Billions app and Login into it.Copy the DID created for your account to use as the Verifier. You can find that in settings.
 USE_CASE=POU  # Options: POH, POU, POVH
-NULLIFIER_SESSION_ID=your_nullifier_session_id
+NULLIFIER_SESSION_ID=your_nullifier_session_id # Must be a positive BigInt for the proof request.
+
+#Use case selection
+# POH (Proof of Humanity): Verify that the user is a real human via `Human` Credential
+# POU (Proof of Uniqueness): Verify that the user is unique (anti-Sybil) via `Verified Human` credential
+# POVH (Proof of Verified Humanity): Verify that the user is a real verified human via `Verified Human` Credential
+
+USE_CASE=POVH    #Options: 'POH', 'POU'
 
 # Redis Configuration (Production)
 # ⚠️ SECURITY: Never commit real credentials to code repositories
@@ -58,17 +67,12 @@ The Billions mobile app sends callbacks to your server, so you need public acces
 
 ### 4. Start the Server
 
+To start ans test the server in dev mode use:
 ```bash
-node index.js
+npm run pm2:dev
 ```
 
-You should see:
-```
-🚀 Privado verifier backend running on port 8080
-🔧 Using verification configuration: POU (Verified Human)
-✅ Redis connected successfully
-📊 Redis storage enabled for production scalability
-```
+You should see a series of messages from PM2 indicating that it’s launching multiple instances of the backend in cluster mode. This confirms that your Billions Verifier backend has successfully started under PM2, leveraging multiple workers for scalability and fault tolerance.
 
 ### 5. Test the Integration
 
@@ -93,9 +97,5 @@ This implementation includes production-ready features:
 
 ---
 
-**Ready to integrate Billions verification into your application? Start with this example and customize it for your needs!** 🚀
-
-## License
-MIT
 
 
