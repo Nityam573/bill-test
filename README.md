@@ -88,6 +88,8 @@ You should see a series of messages from PM2 indicating that it’s launching mu
 This implementation includes production-ready features:
 
 - **Redis Storage**: Persistent storage for sessions and verifications
+- **PM2**: Process Manager for Node.js applications with a built-in Load Balancer.
+- Use a permament storage for sessions and verifications relared to uniquness and nullifier id.
 - **Health Check**: `/api/health` endpoint for monitoring
 - **Graceful Shutdown**: Proper cleanup of Redis connections
 - **Error Handling**: Comprehensive error handling for Redis operations

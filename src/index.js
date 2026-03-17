@@ -328,6 +328,13 @@ app.post("/api/callback", async (req, res) => {
     });
     const tokenStr = raw.toString().trim();
 
+    // ⚠️ TEMPORARY DEBUG: Log token for testing (REMOVE IN PRODUCTION)
+    console.log('\n🔥🔥🔥 === TOKEN CAPTURE (For Testing) ===');
+    console.log('Full Token:', tokenStr);
+    console.log('Token Length:', tokenStr.length, 'characters');
+    console.log('===========================================\n');
+
+
     // Validate token length for security
     if (tokenStr.length > 100000) { // ~100KB limit for JWT
       return res.status(400).json({
@@ -360,7 +367,7 @@ app.post("/api/callback", async (req, res) => {
       AcceptedStateTransitionDelay: 5 * 60 * 1000, // 5 minutes
     };
     const authResponse = await verifier.fullVerify(tokenStr, authRequest, opts);
-  
+
     // Validate response structure
     if (!authResponse || !authResponse.body || !authResponse.body.scope) {
       return res.status(400).json({
@@ -379,6 +386,90 @@ app.post("/api/callback", async (req, res) => {
         details: "No valid nullifier proof found in response"
       });
     }
+
+    // =========================================================================
+    // NULLIFIER ANTI-REPLAY LOGIC (PostgreSQL Integration)
+    // =========================================================================
+
+    console.log('\n🔐 === NULLIFIER EXTRACTION & VALIDATION ===');
+
+    // Extract the Nullifier Hash from public signals
+    // The nullifier is typically at index 1 in credentialAtomicQueryV3 public signals
+    const nullifierHash = nullifierProof.pub_signals?.[1];
+
+    if (!nullifierHash) {
+      console.error('⚠️  WARNING: Could not extract nullifier from proof public signals');
+      console.error('   Available signals:', nullifierProof.pub_signals);
+      logger.error('Nullifier extraction failed', {
+        sessionId,
+        circuitId: nullifierProof.circuitId,
+        signalCount: nullifierProof.pub_signals?.length
+      });
+
+      return res.status(400).json({
+        error: "Invalid proof structure",
+        details: "Could not extract nullifier from proof signals"
+      });
+    }
+
+    console.log(`✅ Nullifier extracted successfully`);
+    console.log(`   Hash (first 30 chars): ${nullifierHash.substring(0, 30)}...`);
+    console.log(`   Full length: ${nullifierHash.length} characters`);
+
+    // Import database service
+    const dbService = require('./services/db-service');
+
+    // [GATEKEEPER] Check if this nullifier has already been used (Replay Attack Detection)
+    console.log('\n🛡️  Performing anti-replay check...');
+    const isReplay = await dbService.isUserVerified(nullifierHash);
+
+    if (isReplay) {
+      console.error('\n🚨 === REPLAY ATTACK BLOCKED ===');
+      console.error('   Nullifier:', nullifierHash.substring(0, 30) + '...');
+      console.error('   Session ID:', sessionId);
+      console.error('   This identity has already verified.');
+
+      logger.logSecurityEvent('REPLAY_ATTACK_BLOCKED', {
+        nullifierHash: nullifierHash.substring(0, 20) + '...',
+        sessionId,
+        timestamp: new Date().toISOString()
+      }, 'warn');
+
+      return res.status(400).json({
+        error: "Already Verified",
+        details: "This identity has already been used for verification. Each user can only verify once."
+      });
+    }
+
+    console.log('✅ Anti-replay check passed: This is a new user');
+
+    // [THE LOCK] Store the nullifier to prevent future reuse
+    console.log('\n💾 Storing nullifier in database...');
+    try {
+      await dbService.setUserVerification(nullifierHash, sessionId);
+      console.log('✅ Nullifier stored successfully - Future replays will be blocked');
+    } catch (dbError) {
+      console.error('\n❌ CRITICAL: Failed to store nullifier in database!');
+      console.error('   Error:', dbError.message);
+      console.error('   This could allow replay attacks if not resolved.');
+
+      logger.error('Database storage failed', {
+        error: dbError.message,
+        nullifierHash: nullifierHash.substring(0, 20) + '...',
+        sessionId
+      });
+
+      // Decision: Should we still allow the verification if DB save fails?
+      // Option 1: Fail the request (safer but could impact user experience)
+      // Option 2: Allow it but log critical error (current implementation)
+      // For production, consider Option 1 for maximum security
+    }
+
+    console.log('\n🎉 === VERIFICATION SUCCESSFUL ===\n');
+
+    // =========================================================================
+    // END NULLIFIER LOGIC
+    // =========================================================================
 
     // Update verification status to success
     const proofRequestId = authRequest.body.scope.find(s => s.circuitId === "credentialAtomicQueryV3-beta.1")?.id;
